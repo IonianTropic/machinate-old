@@ -47,8 +47,17 @@ impl Scanner {
                     }
                     ScannerState::Comment => continue 'line, // skip to next line
                     ScannerState::LParen => {
-                        self.token_stream.push(Token::LParen);
-                        self.full_start(ch);
+                        if ch == ')' {
+                            if self.paren_count == 0 {
+                                self.state.set_error(0);
+                            }
+                            self.paren_count -= 1;
+                            self.token_stream.push(Token::Nil);
+                            self.state.set_start();
+                        } else {
+                            self.token_stream.push(Token::LParen);
+                            self.full_start(ch);
+                        }
                     }
                     ScannerState::RParen => {
                         self.token_stream.push(Token::RParen);
@@ -181,7 +190,7 @@ impl Scanner {
                     ScannerState::CharPoint => {
                         match ch {
                             '\'' => {
-                                self.state.set_skip();
+                                self.state.set_start();
                             }
                             _ => self.state.set_error(0),
                         }
@@ -372,7 +381,7 @@ impl Scanner {
                 self.state.set_r_paren()
             }
             ';' => self.state.set_comment(),
-            ch if ch.is_whitespace() => self.state.set_skip(),
+            ch if ch.is_whitespace() => self.state.set_start(),
             _ => return false,
         }
         true
@@ -457,7 +466,7 @@ impl ScannerState {
         Self::Start
     }
     // main control
-    fn set_skip(&mut self) {
+    fn set_start(&mut self) {
         *self = Self::Start
     }
     fn set_l_paren(&mut self) {

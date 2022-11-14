@@ -3,6 +3,7 @@
 pub enum Token {
     LParen,
     RParen,
+    Nil,
     Dot,
     Char(char),
     Number(NumType),
