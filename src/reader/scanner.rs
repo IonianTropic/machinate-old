@@ -6,12 +6,14 @@ use super::token::{Token, NumType};
 
 const VERBOSE_DEBUG: bool = false;
 
+// TODO: write tests for scanner
 /// Handwritten scanner without regular expressions
 #[derive(Debug)]
 pub struct Scanner {
     state: ScannerState,
     pub token_stream: Vec<Token>,
     next_string: String,
+    quote_string: String,
     paren_count: i32,
 }
 
@@ -21,6 +23,7 @@ impl Scanner {
             state: ScannerState::new(),
             token_stream: Vec::new(),
             next_string: String::new(),
+            quote_string: String::new(),
             paren_count: 0,
         }
     }
@@ -29,8 +32,8 @@ impl Scanner {
         let mut buf = String::new();
         'line: loop {
             match input.read_line(&mut buf) {
-                Ok(_) => (),
-                Err(len) => panic!("line length limit (80) reached: {}", len),
+                Ok(len) => if len > 80 { panic!("Maximum line length (80) reached"); }
+                Err(e) => panic!("read_line error: {}", e),
             }
             if buf.trim() == "quit" {exit(0)}
             if VERBOSE_DEBUG {println!("Buffer Debug: {:?}", buf);}
@@ -47,8 +50,17 @@ impl Scanner {
                     }
                     ScannerState::Comment => continue 'line, // skip to next line
                     ScannerState::LParen => {
-                        self.token_stream.push(Token::LParen);
-                        self.full_start(ch);
+                        if ch == ')' {
+                            if self.paren_count == 0 {
+                                self.state.set_error(0);
+                            }
+                            self.paren_count -= 1;
+                            self.token_stream.push(Token::Nil);
+                            self.state.set_start();
+                        } else {
+                            self.token_stream.push(Token::LParen);
+                            self.full_start(ch);
+                        }
                     }
                     ScannerState::RParen => {
                         self.token_stream.push(Token::RParen);
@@ -165,58 +177,108 @@ impl Scanner {
                             _ => self.state.set_error(0),
                         }
                     }
-                    // char scanning
-                    ScannerState::CharStart => {
+                    // number scanning
+                    ScannerState::CharOrQuote => {
                         match ch {
-                            '\'' => self.state.set_error(0),
-                            '\\' => self.state.set_char_escape(),
-                            '\x20'..= '\u{d7ff}' |
-                            '\u{e000}'..= '\u{10ffff}' => {
-                                self.token_stream.push(Token::Char(ch));
+                            '\\' => {
+                                self.quote_string.push(ch);
+                                self.state.set_char_escape_or_quote();
+                            }
+                            ch if is_symbol_start(ch) => {
+                                self.next_string.push(ch);
+                                self.quote_string.push(ch);
+                                self.state.set_char_point_or_quote();
+                            }
+                            '\0' ..= '\u{D7FF}' |
+                            '\u{E000}' ..= '\u{10FFFF}' => {
+                                self.next_string.push(ch);
                                 self.state.set_char_point();
                             }
-                            _ => self.state.set_error(0),
                         }
                     }
                     ScannerState::CharPoint => {
                         match ch {
                             '\'' => {
-                                self.state.set_skip();
+                                self.token_stream.push(
+                                    Token::Char(
+                                        self.next_string
+                                        .chars()
+                                        .next()
+                                        .unwrap()
+                                    ));
+                                self.next_string.clear();
                             }
                             _ => self.state.set_error(0),
                         }
                     }
-                    ScannerState::CharEscape => {
-                        // TODO implement escape sequences u, x
+                    ScannerState::CharPointOrQuote => {
+                        match ch {
+                            '\'' => {
+                                self.state.set_char_end();
+                            }
+                            ch if is_symbol_continue(ch) => {
+                                self.quote_string.push(ch);
+                                self.next_string.clear();
+                                self.state.set_quote();
+                            }
+                            ch if self.start(ch) => {
+                                self.token_stream.push(Token::Quote(self.quote_string.clone()));
+                                self.quote_string.clear();
+                                self.next_string.clear();
+                            }
+                            _ => self.state.set_error(0),
+                        }
+                    }
+                    ScannerState::CharEscapeOrQuote => {
                         match ch {
                             '0' => {
-                                self.token_stream.push(Token::Char('\0'));
-                                self.state.set_char_point();
+                                self.next_string.push('\0');
+                                self.quote_string.push('0');
+                                self.state.set_char_point_or_quote();
                             }
                             't' => {
-                                self.token_stream.push(Token::Char('\t'));
-                                self.state.set_char_point();
+                                self.next_string.push('\t');
+                                self.quote_string.push('t');
+                                self.state.set_char_point_or_quote();
                             }
                             'n' => {
-                                self.token_stream.push(Token::Char('\n'));
-                                self.state.set_char_point();
+                                self.next_string.push('\n');
+                                self.quote_string.push('n');
+                                self.state.set_char_point_or_quote();
                             }
                             'r' => {
-                                self.token_stream.push(Token::Char('\r'));
-                                self.state.set_char_point();
+                                self.next_string.push('\r');
+                                self.quote_string.push('r');
+                                self.state.set_char_point_or_quote();
                             }
                             '\\' => {
-                                self.token_stream.push(Token::Char('\\'));
-                                self.state.set_char_point();
+                                self.next_string.push('\\');
+                                self.quote_string.push('\\');
+                                self.state.set_char_point_or_quote();
                             }
-                            '\'' => {
-                                self.token_stream.push(Token::Char('\''));
-                                self.state.set_char_point();
+                            ch if is_symbol_continue(ch) => {
+                                self.quote_string.push(ch);
+                                self.state.set_quote();
                             }
                             _ => self.state.set_error(0),
                         }
                     }
-                    // number scanning
+                    ScannerState::CharEnd => {
+                        match ch {
+                            ch if self.start(ch) => {
+                                self.token_stream.push(
+                                    Token::Char(
+                                        self.next_string
+                                        .chars()
+                                        .next()
+                                        .unwrap()
+                                    ));
+                                self.next_string.clear();
+                                self.quote_string.clear();
+                            }
+                            _ => self.state.set_error(0),
+                        }
+                    }
                     ScannerState::FirstDigits => {
                         match ch {
                             '0'..='9' => {
@@ -343,6 +405,67 @@ impl Scanner {
                             _ => self.state.set_error(0),
                         }
                     }
+                    ScannerState::Quote => {
+                        match ch {
+                            ch if is_symbol_continue(ch) => {
+                                self.quote_string.push(ch);
+                            }
+                            ch if self.start(ch) => {
+                                self.token_stream.push(Token::Quote(self.quote_string.clone()));
+                                self.quote_string.clear();
+                            }
+                            _ => self.state.set_error(0),
+                        }
+                    }
+                    // string string
+                    ScannerState::String => {
+                        match ch {
+                            '"' => {
+                                self.state.set_string_end();
+                            }
+                            '\\' => {
+                                self.state.set_string_escape();
+                            }
+                            _ => self.next_string.push(ch),
+                        }
+                    }
+                    ScannerState::StringEscape => {
+                        match ch {
+                            '0' => {
+                                self.next_string.push('\0');
+                                self.state.set_string();
+                            }
+                            't' => {
+                                self.next_string.push('\t');
+                                self.state.set_string();
+                            }
+                            'n' => {
+                                self.next_string.push('\n');
+                                self.state.set_string();
+                            }
+                            'r' => {
+                                self.next_string.push('\r');
+                                self.state.set_string();
+                            }
+                            '\\' => {
+                                self.next_string.push('\\');
+                                self.state.set_string();
+                            }
+                            _ => self.state.set_error(0),
+                        }
+                    }
+                    ScannerState::StringEnd => {
+                        match ch {
+                            ch if self.start(ch) => {
+                                self.token_stream.push(
+                                    Token::String(
+                                        self.next_string.clone()
+                                    ));
+                                self.next_string.clear();
+                            }
+                            _ => self.state.set_error(0),
+                        }
+                    }
                 }
             }
             match self.paren_count.cmp(&0) {
@@ -372,7 +495,7 @@ impl Scanner {
                 self.state.set_r_paren()
             }
             ';' => self.state.set_comment(),
-            ch if ch.is_whitespace() => self.state.set_skip(),
+            ch if ch.is_whitespace() => self.state.set_start(),
             _ => return false,
         }
         true
@@ -382,7 +505,7 @@ impl Scanner {
         match ch {
             // Char
             '\'' => {
-                self.state.set_char_start();
+                self.state.set_char_or_quote();
             }
             
             // Number or Symbol
@@ -406,11 +529,14 @@ impl Scanner {
                 self.next_string.push(ch);
                 self.state.set_dot_or_digits();
             }
-
             // Symbol
             ch if is_symbol_start(ch) => {
                 self.next_string.push(ch);
                 self.state.set_symbol();
+            }
+            // String
+            '"' => {
+                self.state.set_string();
             }
             // skip
             ch if self.start(ch) => (),
@@ -437,9 +563,11 @@ enum ScannerState {
     InfOrSymbol(u8),
     DotOrDigits,
 
-    CharStart,
+    CharOrQuote,
     CharPoint,
-    CharEscape,
+    CharPointOrQuote,
+    CharEscapeOrQuote,
+    CharEnd,
 
     FirstDigits,
 
@@ -450,6 +578,11 @@ enum ScannerState {
     ExpDigits,
 
     Symbol,
+    Quote,
+
+    String,
+    StringEscape,
+    StringEnd,
 }
 
 impl ScannerState {
@@ -457,7 +590,7 @@ impl ScannerState {
         Self::Start
     }
     // main control
-    fn set_skip(&mut self) {
+    fn set_start(&mut self) {
         *self = Self::Start
     }
     fn set_l_paren(&mut self) {
@@ -486,14 +619,20 @@ impl ScannerState {
         *self = Self::DotOrDigits
     }
     // char
-    fn set_char_start(&mut self) {
-        *self = Self::CharStart
+    fn set_char_or_quote(&mut self) {
+        *self = Self::CharOrQuote
     }
     fn set_char_point(&mut self) {
         *self = Self::CharPoint
     }
-    fn set_char_escape(&mut self) {
-        *self = Self::CharEscape
+    fn set_char_point_or_quote(&mut self) {
+        *self = Self::CharPointOrQuote
+    }
+    fn set_char_escape_or_quote(&mut self) {
+        *self = Self::CharEscapeOrQuote
+    }
+    fn set_char_end(&mut self) {
+        *self = Self::CharEnd
     }
     // number
     fn set_first_digits(&mut self) {
@@ -518,78 +657,60 @@ impl ScannerState {
     fn set_symbol(&mut self) {
         *self = Self::Symbol
     }
+    fn set_quote(&mut self) {
+        *self = Self::Quote
+    }
+    // string
+    fn set_string(&mut self) {
+        *self = Self::String
+    }
+    fn set_string_escape(&mut self) {
+        *self = Self::StringEscape
+    }
+    fn set_string_end(&mut self) {
+        *self = Self::StringEnd
+    }
 }
 
 fn is_symbol_start(ch: char) -> bool {
-    match ch {
-        'A'..='Z' |
-        'a'..='z' |
-        '_' |
-        '-' |
-        '+' |
-        '*' |
-        '/' => true,
-        _ => false,
-    }
+    matches!(ch, 'A'..='Z' |
+    'a'..='z' |
+    '_' |
+    '-' |
+    '+' |
+    '*' |
+    '/')
 }
 
 fn is_symbol_continue(ch: char) -> bool {
-    match ch {
-        'A'..='Z' |
-        'a'..='z' |
-        '_' |
-        '-' |
-        '+' |
-        '*' |
-        '/' => true,
-        _ => false,
-    }
+    matches!(ch, 'A'..='Z' |
+    'a'..='z' |
+    '_' |
+    '-' |
+    '+' |
+    '*' |
+    '/')
 }
 
 fn is_nan(ch: char, step: u8) -> bool {
+    let l_ch = ch.to_ascii_lowercase();
     match step {
-        0 => match ch {
-            'A' | 'a' => true,
-            _ => false,
-        }
-        1 => match ch {
-            'N' | 'n' => true,
-            _ => false,
-        }
+        0 => matches!(l_ch, 'a'),
+        1 => matches!(l_ch, 'n'),
         _ => false,
     }
 }
 
 fn is_inf(ch: char, step: u8) -> bool {
+    let l_ch = ch.to_ascii_lowercase();
     match step {
-        0 => match ch {
-            'N' | 'n' => true,
-            _ => false,
-        }
-        1 => match ch {
-            'F' | 'f' => true,
-            _ => false,
-        }
-        2 => match ch {
-            'I' | 'i' => true,
-            _ => false,
-        }
-        3 => match ch {
-            'N' | 'n' => true,
-            _ => false,
-        }
-        4 => match ch {
-            'I' | 'i' => true,
-            _ => false,
-        }
-        5 => match ch {
-            'T' | 't' => true,
-            _ => false,
-        }
-        6 => match ch {
-            'Y' | 'y' => true,
-            _ => false,
-        }
+        0 => matches!(l_ch, 'n'),
+        1 => matches!(l_ch, 'f'),
+        2 => matches!(l_ch, 'i'),
+        3 => matches!(l_ch, 'n'),
+        4 => matches!(l_ch, 'i'),
+        5 => matches!(l_ch, 't'),
+        6 => matches!(l_ch, 'y'),
         _ => false,
     }
 }

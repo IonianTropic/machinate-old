@@ -3,10 +3,13 @@
 pub enum Token {
     LParen,
     RParen,
+    Nil,
     Dot,
     Char(char),
     Number(NumType),
     Symbol(String),
+    Quote(String),
+    String(String),
 }
 
 #[derive(Debug)]
