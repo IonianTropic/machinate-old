@@ -15,7 +15,7 @@ fn token_read<B: BufRead>(input: &mut B) -> Vec<Token> {
 fn token_print<W: Write>(output: &mut W, token_stream: Vec<Token>) -> io::Result<()> {
     let setup = format!("{:?}\n", token_stream);
     let buf = setup.as_bytes();
-    output.write(buf)?;
+    output.write_all(buf)?;
     output.flush()?;
     Ok(())
 }
@@ -25,7 +25,7 @@ pub fn token_rpl() -> io::Result<()> {
     let mut stdout = io::stdout().lock();
     let prompt = ">>> ".as_bytes();
     loop {
-        stdout.write(prompt)?;
+        stdout.write_all(prompt)?;
         stdout.flush()?;
         token_print(&mut stdout, token_read(&mut stdin))?;
     }

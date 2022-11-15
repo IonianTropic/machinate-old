@@ -176,67 +176,6 @@ impl Scanner {
                             _ => self.state.set_error(0),
                         }
                     }
-                    // char scanning
-                    // ScannerState::CharStart => {
-                    //     match ch {
-                    //         '\'' => self.state.set_error(0),
-                    //         '\\' => self.state.set_char_escape(),
-                    //         '\x20'..= '\u{d7ff}' |
-                    //         '\u{e000}'..= '\u{10ffff}' => {
-                    //             self.next_string.push(ch);
-                    //             self.state.set_char_point();
-                    //         }
-                    //         _ => self.state.set_error(0),
-                    //     }
-                    // }
-                    // ScannerState::CharPoint => {
-                    //     match ch {
-                    //         '\'' => {
-                    //             self.token_stream.push(
-                    //                 Token::Char(
-                    //                     self.next_string
-                    //                     .chars()
-                    //                     .next()
-                    //                     .unwrap()
-                    //                 ));
-                    //             self.next_string.clear();
-                    //         }
-                    //         ch if is_symbol_start(ch) => {
-                    //             self.state.set_symbol();
-                    //         }
-                    //         _ => self.state.set_error(0),
-                    //     }
-                    // }
-                    // ScannerState::CharEscape => {
-                    //     // TODO implement escape sequences u, x
-                    //     match ch {
-                    //         '0' => {
-                    //             self.next_string.push('\0');
-                    //             self.state.set_char_point();
-                    //         }
-                    //         't' => {
-                    //             self.next_string.push('\t');
-                    //             self.state.set_char_point();
-                    //         }
-                    //         'n' => {
-                    //             self.next_string.push('\n');
-                    //             self.state.set_char_point();
-                    //         }
-                    //         'r' => {
-                    //             self.next_string.push('\r');
-                    //             self.state.set_char_point();
-                    //         }
-                    //         '\\' => {
-                    //             self.next_string.push('\\');
-                    //             self.state.set_char_point();
-                    //         }
-                    //         '\'' => {
-                    //             self.next_string.push('\'');
-                    //             self.state.set_char_point();
-                    //         }
-                    //         _ => self.state.set_error(0),
-                    //     }
-                    // }
                     // number scanning
                     ScannerState::CharOrQuote => {
                         match ch {
@@ -254,7 +193,6 @@ impl Scanner {
                                 self.next_string.push(ch);
                                 self.state.set_char_point();
                             }
-                            _ => self.state.set_error(0),
                         }
                     }
                     ScannerState::CharPoint => {
@@ -734,75 +672,44 @@ impl ScannerState {
 }
 
 fn is_symbol_start(ch: char) -> bool {
-    match ch {
-        'A'..='Z' |
-        'a'..='z' |
-        '_' |
-        '-' |
-        '+' |
-        '*' |
-        '/' => true,
-        _ => false,
-    }
+    matches!(ch, 'A'..='Z' |
+    'a'..='z' |
+    '_' |
+    '-' |
+    '+' |
+    '*' |
+    '/')
 }
 
 fn is_symbol_continue(ch: char) -> bool {
-    match ch {
-        'A'..='Z' |
-        'a'..='z' |
-        '_' |
-        '-' |
-        '+' |
-        '*' |
-        '/' => true,
-        _ => false,
-    }
+    matches!(ch, 'A'..='Z' |
+    'a'..='z' |
+    '_' |
+    '-' |
+    '+' |
+    '*' |
+    '/')
 }
 
 fn is_nan(ch: char, step: u8) -> bool {
+    let l_ch = ch.to_ascii_lowercase();
     match step {
-        0 => match ch {
-            'A' | 'a' => true,
-            _ => false,
-        }
-        1 => match ch {
-            'N' | 'n' => true,
-            _ => false,
-        }
+        0 => matches!(l_ch, 'a'),
+        1 => matches!(l_ch, 'n'),
         _ => false,
     }
 }
 
 fn is_inf(ch: char, step: u8) -> bool {
+    let l_ch = ch.to_ascii_lowercase();
     match step {
-        0 => match ch {
-            'N' | 'n' => true,
-            _ => false,
-        }
-        1 => match ch {
-            'F' | 'f' => true,
-            _ => false,
-        }
-        2 => match ch {
-            'I' | 'i' => true,
-            _ => false,
-        }
-        3 => match ch {
-            'N' | 'n' => true,
-            _ => false,
-        }
-        4 => match ch {
-            'I' | 'i' => true,
-            _ => false,
-        }
-        5 => match ch {
-            'T' | 't' => true,
-            _ => false,
-        }
-        6 => match ch {
-            'Y' | 'y' => true,
-            _ => false,
-        }
+        0 => matches!(l_ch, 'n'),
+        1 => matches!(l_ch, 'f'),
+        2 => matches!(l_ch, 'i'),
+        3 => matches!(l_ch, 'n'),
+        4 => matches!(l_ch, 'i'),
+        5 => matches!(l_ch, 't'),
+        6 => matches!(l_ch, 'y'),
         _ => false,
     }
 }
