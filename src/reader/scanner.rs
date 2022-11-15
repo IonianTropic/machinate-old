@@ -1,7 +1,6 @@
 use std::io::{BufRead, Write};
 use std::process::exit;
 use std::str::FromStr;
-use std::thread::panicking;
 
 use super::token::{Token, NumType};
 
@@ -313,6 +312,11 @@ impl Scanner {
                                 self.quote_string.push('r');
                                 self.state.set_char_point_or_quote();
                             }
+                            '\\' => {
+                                self.next_string.push('\\');
+                                self.quote_string.push('\\');
+                                self.state.set_char_point_or_quote();
+                            }
                             ch if is_symbol_continue(ch) => {
                                 self.quote_string.push(ch);
                                 self.state.set_quote();
@@ -474,6 +478,55 @@ impl Scanner {
                             _ => self.state.set_error(0),
                         }
                     }
+                    // string string
+                    ScannerState::String => {
+                        match ch {
+                            '"' => {
+                                self.state.set_string_end();
+                            }
+                            '\\' => {
+                                self.state.set_string_escape();
+                            }
+                            _ => self.next_string.push(ch),
+                        }
+                    }
+                    ScannerState::StringEscape => {
+                        match ch {
+                            '0' => {
+                                self.next_string.push('\0');
+                                self.state.set_string();
+                            }
+                            't' => {
+                                self.next_string.push('\t');
+                                self.state.set_string();
+                            }
+                            'n' => {
+                                self.next_string.push('\n');
+                                self.state.set_string();
+                            }
+                            'r' => {
+                                self.next_string.push('\r');
+                                self.state.set_string();
+                            }
+                            '\\' => {
+                                self.next_string.push('\\');
+                                self.state.set_string();
+                            }
+                            _ => self.state.set_error(0),
+                        }
+                    }
+                    ScannerState::StringEnd => {
+                        match ch {
+                            ch if self.start(ch) => {
+                                self.token_stream.push(
+                                    Token::String(
+                                        self.next_string.clone()
+                                    ));
+                                self.next_string.clear();
+                            }
+                            _ => self.state.set_error(0),
+                        }
+                    }
                 }
             }
             match self.paren_count.cmp(&0) {
@@ -537,11 +590,14 @@ impl Scanner {
                 self.next_string.push(ch);
                 self.state.set_dot_or_digits();
             }
-
             // Symbol
             ch if is_symbol_start(ch) => {
                 self.next_string.push(ch);
                 self.state.set_symbol();
+            }
+            // String
+            '"' => {
+                self.state.set_string();
             }
             // skip
             ch if self.start(ch) => (),
@@ -584,6 +640,10 @@ enum ScannerState {
 
     Symbol,
     Quote,
+
+    String,
+    StringEscape,
+    StringEnd,
 }
 
 impl ScannerState {
@@ -624,7 +684,7 @@ impl ScannerState {
         *self = Self::CharOrQuote
     }
     fn set_char_point(&mut self) {
-        *self = Self::CharPointOrQuote
+        *self = Self::CharPoint
     }
     fn set_char_point_or_quote(&mut self) {
         *self = Self::CharPointOrQuote
@@ -660,6 +720,16 @@ impl ScannerState {
     }
     fn set_quote(&mut self) {
         *self = Self::Quote
+    }
+    // string
+    fn set_string(&mut self) {
+        *self = Self::String
+    }
+    fn set_string_escape(&mut self) {
+        *self = Self::StringEscape
+    }
+    fn set_string_end(&mut self) {
+        *self = Self::StringEnd
     }
 }
 

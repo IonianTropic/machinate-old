@@ -1,9 +1,13 @@
-use std::{cell::{RefCell, Ref}, rc::Rc};
+use std::{cell::{RefCell, Ref, RefMut}, rc::Rc};
+
+use machinate::Object;
 
 trait Object {
-    fn is_atom(&self) -> bool;
-    fn get_car(&self) -> Option<Ref<dyn Object>>;
-    fn get_cdr(&self) -> Option<Ref<dyn Object>>;
+    fn __atom(&self) -> bool;
+    fn __car(&self) -> Option<Ref<dyn Object>>;
+    fn __cdr(&self) -> Option<Ref<dyn Object>>;
+    fn __car_mut(&self) -> Option<RefMut<dyn Object>>;
+    fn __cdr_mut(&self) -> Option<RefMut<dyn Object>>;
 }
 
 struct Cons {
@@ -12,16 +16,27 @@ struct Cons {
 }
 
 impl Object for Cons {
-    fn is_atom(&self) -> bool {
+    fn __atom(&self) -> bool {
         false
     }
-
-    fn get_car(&self) -> Option<Ref<dyn Object>> {
+    
+    fn __car(&self) -> Option<Ref<dyn Object>> {
         Some(self.car.borrow())
     }
 
-    fn get_cdr(&self) -> Option<Ref<dyn Object>> {
+    fn __cdr(&self) -> Option<Ref<dyn Object>> {
         Some(self.cdr.borrow())
     }
+
+    fn __car_mut(&self) -> Option<RefMut<dyn Object>> {
+        Some(self.car.borrow_mut())
+    }
+
+    fn __cdr_mut(&self) -> Option<RefMut<dyn Object>> {
+        Some(self.cdr.borrow_mut())
+    }
 }
+
+#[derive(Object)]
+struct Nil;
 

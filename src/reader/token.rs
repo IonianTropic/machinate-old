@@ -8,7 +8,8 @@ pub enum Token {
     Char(char),
     Number(NumType),
     Symbol(String),
-    Quote(String)
+    Quote(String),
+    String(String),
 }
 
 #[derive(Debug)]
