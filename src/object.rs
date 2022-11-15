@@ -1,9 +1,9 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::{RefCell, Ref}, rc::Rc};
 
 trait Object {
     fn is_atom(&self) -> bool;
-    fn get_car(&self) -> Option<Rc<RefCell<dyn Object>>>;
-    fn get_cdr(&self) -> Option<Rc<RefCell<dyn Object>>>;
+    fn get_car(&self) -> Option<Ref<dyn Object>>;
+    fn get_cdr(&self) -> Option<Ref<dyn Object>>;
 }
 
 struct Cons {
@@ -11,17 +11,17 @@ struct Cons {
     cdr: Rc<RefCell<dyn Object>>,
 }
 
-// impl Object for Cons {
-//     fn is_atom(&self) -> bool {
-//         false
-//     }
+impl Object for Cons {
+    fn is_atom(&self) -> bool {
+        false
+    }
 
-//     fn get_car(&self) -> Option<Rc<RefCell<dyn Object>>> {
-//         Some(self.car)
-//     }
+    fn get_car(&self) -> Option<Ref<dyn Object>> {
+        Some(self.car.borrow())
+    }
 
-//     fn get_cdr(&self) -> Option<Rc<RefCell<dyn Object>>> {
-//         Some(self.cdr)
-//     }
-// }
+    fn get_cdr(&self) -> Option<Ref<dyn Object>> {
+        Some(self.cdr.borrow())
+    }
+}
 
