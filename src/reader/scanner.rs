@@ -52,7 +52,7 @@ impl Scanner {
                     ScannerState::LParen => {
                         if ch == ')' {
                             if self.paren_count == 0 {
-                                self.state.set_error(0);
+                                self.state.set_error(3);
                             }
                             self.paren_count -= 1;
                             self.token_stream.push(Token::Nil);
@@ -96,7 +96,7 @@ impl Scanner {
                                     ));
                                 self.next_string.clear();
                             }
-                            _ => self.state.set_error(0),
+                            _ => self.state.set_error(4),
                         }
                     }
                     ScannerState::NaNOrSymbol(step) => {
@@ -130,7 +130,7 @@ impl Scanner {
                                     self.next_string.clear();
                                 }
                             }
-                            _ => self.state.set_error(0),
+                            _ => self.state.set_error(5),
                         }
                     }
                     ScannerState::InfOrSymbol(step) => {
@@ -164,7 +164,7 @@ impl Scanner {
                                     self.next_string.clear();
                                 }
                             }
-                            _ => self.state.set_error(0),
+                            _ => self.state.set_error(6),
                         }
                     }
                     ScannerState::DotOrDigits => {
@@ -174,7 +174,7 @@ impl Scanner {
                                 self.state.set_2nd_digits();
                             }
                             ch if self.start(ch) => self.token_stream.push(Token::Dot),
-                            _ => self.state.set_error(0),
+                            _ => self.state.set_error(7),
                         }
                     }
                     // number scanning
@@ -208,7 +208,7 @@ impl Scanner {
                                     ));
                                 self.next_string.clear();
                             }
-                            _ => self.state.set_error(0),
+                            _ => self.state.set_error(8),
                         }
                     }
                     ScannerState::CharPointOrQuote => {
@@ -226,7 +226,7 @@ impl Scanner {
                                 self.quote_string.clear();
                                 self.next_string.clear();
                             }
-                            _ => self.state.set_error(0),
+                            _ => self.state.set_error(9),
                         }
                     }
                     ScannerState::CharEscapeOrQuote => {
@@ -260,7 +260,7 @@ impl Scanner {
                                 self.quote_string.push(ch);
                                 self.state.set_quote();
                             }
-                            _ => self.state.set_error(0),
+                            _ => self.state.set_error(10),
                         }
                     }
                     ScannerState::CharEnd => {
@@ -276,7 +276,7 @@ impl Scanner {
                                 self.next_string.clear();
                                 self.quote_string.clear();
                             }
-                            _ => self.state.set_error(0),
+                            _ => self.state.set_error(11),
                         }
                     }
                     ScannerState::FirstDigits => {
@@ -302,7 +302,7 @@ impl Scanner {
                                         )));
                                 self.next_string.clear();
                             }
-                            _ => self.state.set_error(0),
+                            _ => self.state.set_error(12),
                         }
                     }
                     // float
@@ -326,7 +326,7 @@ impl Scanner {
                                         )));
                                 self.next_string.clear();
                             }
-                            _ => self.state.set_error(0),
+                            _ => self.state.set_error(13),
                         }
                     }
                     ScannerState::SecondDigits => {
@@ -348,7 +348,7 @@ impl Scanner {
                                         )));
                                 self.next_string.clear();
                             }
-                            _ => self.state.set_error(0),
+                            _ => self.state.set_error(14),
                         }
                     }
                     ScannerState::Exp => {
@@ -361,7 +361,7 @@ impl Scanner {
                                 self.next_string.push(ch);
                                 self.state.set_exp_sign();
                             }
-                            _ => self.state.set_error(0),
+                            _ => self.state.set_error(15),
                         }
                     }
                     ScannerState::ExpSign => {
@@ -370,7 +370,7 @@ impl Scanner {
                                 self.next_string.push(ch);
                                 self.state.set_exp_digits();
                             }
-                            _ => self.state.set_error(0),
+                            _ => self.state.set_error(16),
                         }
                     }
                     ScannerState::ExpDigits => {
@@ -389,7 +389,7 @@ impl Scanner {
                                         )));
                                 self.next_string.clear();
                             }
-                            _ => self.state.set_error(0),
+                            _ => self.state.set_error(17),
                         }
                     }
                     // symbol scanning
@@ -402,7 +402,7 @@ impl Scanner {
                                 self.token_stream.push(Token::Symbol(self.next_string.clone()));
                                 self.next_string.clear();
                             }
-                            _ => self.state.set_error(0),
+                            _ => self.state.set_error(18),
                         }
                     }
                     ScannerState::Quote => {
@@ -414,7 +414,7 @@ impl Scanner {
                                 self.token_stream.push(Token::Quote(self.quote_string.clone()));
                                 self.quote_string.clear();
                             }
-                            _ => self.state.set_error(0),
+                            _ => self.state.set_error(19),
                         }
                     }
                     // string string
@@ -451,7 +451,7 @@ impl Scanner {
                                 self.next_string.push('\\');
                                 self.state.set_string();
                             }
-                            _ => self.state.set_error(0),
+                            _ => self.state.set_error(20),
                         }
                     }
                     ScannerState::StringEnd => {
@@ -463,7 +463,7 @@ impl Scanner {
                                     ));
                                 self.next_string.clear();
                             }
-                            _ => self.state.set_error(0),
+                            _ => self.state.set_error(21),
                         }
                     }
                 }
@@ -489,7 +489,7 @@ impl Scanner {
             }
             ')' => {
                 if self.paren_count == 0 {
-                    self.state.set_error(0);
+                    self.state.set_error(2);
                 }
                 self.paren_count -= 1;
                 self.state.set_r_paren()
@@ -540,7 +540,7 @@ impl Scanner {
             }
             // skip
             ch if self.start(ch) => (),
-            _ => (),
+            _ => self.state.set_error(1),
         }
     }
 
