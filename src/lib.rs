@@ -6,8 +6,9 @@ use syn::{parse_macro_input, DeriveInput};
 pub fn object(input: TokenStream) -> TokenStream {
     // Parse the input tokens into a syntax tree
     let input = parse_macro_input!(input as DeriveInput);
+    // Build the output
     let name = &input.ident;
-    // Build the output, possibly using quasi-quotation
+    
     let expanded = quote! {
         impl Object for #name {
             fn __atom(&self) -> bool { true }
