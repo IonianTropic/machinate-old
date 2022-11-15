@@ -1,6 +1,6 @@
 use crate::object::types::{symbol::Symbol, int::Int, cons::Cons, nil::Nil};
 
-
+// TODO: write full for object system
 pub fn test_obj() {
     let minus = Symbol::new(String::from("-"));
     let minuend = Int::new(21);

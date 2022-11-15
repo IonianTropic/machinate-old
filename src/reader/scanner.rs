@@ -6,6 +6,7 @@ use super::token::{Token, NumType};
 
 const VERBOSE_DEBUG: bool = false;
 
+// TODO: write tests for scanner
 /// Handwritten scanner without regular expressions
 #[derive(Debug)]
 pub struct Scanner {
