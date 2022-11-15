@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use super::token::{Token, NumType};
 
-const VERBOSE_DEBUG: bool = true;
+const VERBOSE_DEBUG: bool = false;
 
 /// Handwritten scanner without regular expressions
 #[derive(Debug)]
