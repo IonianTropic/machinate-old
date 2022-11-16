@@ -4,18 +4,20 @@ use machinate::Atomic;
 
 use crate::object::{Object, ObjPtr};
 
+use super::MType;
+
 
 #[derive(Debug, Atomic)]
 pub struct MChar(char);
 
 impl Object for MChar {
-    fn type_id(&self) -> u64 {
-        4
+    fn type_id(&self) -> MType {
+        MType::MChar
     }
 }
 
 impl MChar {
-    pub fn new(ch: char) -> ObjPtr {
-        ObjPtr( Rc::new( RefCell::new( MChar(ch) ) ) )
+    pub fn new(ch: char) -> Self {
+        Self(ch)
     }
 }

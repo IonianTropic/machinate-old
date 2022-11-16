@@ -2,11 +2,13 @@ use std::{cell::{Ref, RefMut, RefCell}, rc::Rc};
 
 use crate::object::{Atomic, Object, ObjPtr};
 
+use super::MType;
 
-#[derive(Debug)]
+
+#[derive(Debug, Clone)]
 pub struct Cons {
-    car: ObjPtr,
-    cdr: ObjPtr,
+    pub car: ObjPtr,
+    pub cdr: ObjPtr,
 }
 
 impl Atomic for Cons {
@@ -14,36 +16,30 @@ impl Atomic for Cons {
         false
     }
     fn car(&self) -> Option<Ref<dyn Object>> {
-        Some(self.car.0.borrow())
+        Some(self.car.borrow())
     }
     fn cdr(&self) -> Option<Ref<dyn Object>> {
-        Some(self.cdr.0.borrow())
+        Some(self.cdr.borrow())
     }
     fn car_mut(&self) -> Option<RefMut<dyn Object>> {
-        Some(self.car.0.borrow_mut())
+        Some(self.car.borrow_mut())
     }
     fn cdr_mut(&self) -> Option<RefMut<dyn Object>> {
-        Some(self.cdr.0.borrow_mut())
+        Some(self.cdr.borrow_mut())
+    }
+    fn wrap(self) -> ObjPtr {
+        ObjPtr( Rc::new( RefCell::new( self ) ) )
     }
 }
 
 impl Object for Cons {
-    fn type_id(&self) -> u64 {
-        2
+    fn type_id(&self) -> MType {
+        MType::Cons
     }
 }
 
 impl Cons {
-    pub fn new(car: ObjPtr, cdr: ObjPtr) -> ObjPtr {
-        ObjPtr(
-            Rc::new(
-                RefCell::new(
-                    Self {
-                        car,
-                        cdr,
-                    }
-                )
-            )
-        )
+    pub fn new(car: ObjPtr, cdr: ObjPtr) -> Self {
+        Self { car, cdr, }
     }
 }

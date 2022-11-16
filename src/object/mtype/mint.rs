@@ -4,18 +4,20 @@ use machinate::Atomic;
 
 use crate::object::{Object, ObjPtr};
 
+use super::MType;
+
 
 #[derive(Debug, Atomic)]
 pub struct MInt(i32);
 
 impl Object for MInt {
-    fn type_id(&self) -> u64 {
-        4
+    fn type_id(&self) -> MType {
+        MType::MInt
     }
 }
 
 impl MInt {
-    pub fn new(int: i32) -> ObjPtr {
-        ObjPtr( Rc::new( RefCell::new( MInt(int) ) ) )
+    pub fn new(int: i32) -> Self {
+        Self(int)
     }
 }

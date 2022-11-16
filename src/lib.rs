@@ -15,6 +15,7 @@ pub fn atomic(input: TokenStream) -> TokenStream {
         use std::cell::RefMut;
         impl Atomic for #name {
             fn is_atom(&self) -> bool { true }
+            fn wrap(self) -> ObjPtr { ObjPtr(Rc::new(RefCell::new(self))) }
             fn car(&self) -> Option<Ref<dyn Object>> { None }
             fn cdr(&self) -> Option<Ref<dyn Object>> { None }
             fn car_mut(&self) -> Option<RefMut<dyn Object>> { None }

@@ -4,18 +4,20 @@ use machinate::Atomic;
 
 use crate::object::{Object, ObjPtr};
 
+use super::MType;
+
 
 #[derive(Debug, Atomic)]
 pub struct MFloat(f32);
 
 impl Object for MFloat {
-    fn type_id(&self) -> u64 {
-        4
+    fn type_id(&self) -> MType {
+        MType::MFloat
     }
 }
 
-impl MInt {
-    pub fn new(int: i32) -> ObjPtr {
-        ObjPtr( Rc::new( RefCell::new( MFloat(int) ) ) )
+impl MFloat {
+    pub fn new(fp: f32) -> Self {
+        Self(fp)
     }
 }

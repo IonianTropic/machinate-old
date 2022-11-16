@@ -4,13 +4,15 @@ use machinate::Atomic;
 
 use crate::object::{Object, ObjPtr};
 
+use super::MType;
+
 
 #[derive(Debug, Atomic)]
 pub struct Symbol(String);
 
 impl Object for Symbol {
-    fn type_id(&self) -> u64 {
-        1
+    fn type_id(&self) -> MType {
+        MType::Symbol
     }
 }
 
