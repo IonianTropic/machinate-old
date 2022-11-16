@@ -1,14 +1,18 @@
 use std::{cell::{Ref, RefMut, RefCell}, fmt::Debug, rc::Rc};
 
 pub mod tests;
-mod types;
+pub mod mtype;
 
-pub trait Object: Debug {
-    fn __atom(&self) -> bool;
-    fn __car(&self) -> Option<Ref<dyn Object>>;
-    fn __cdr(&self) -> Option<Ref<dyn Object>>;
-    fn __car_mut(&self) -> Option<RefMut<dyn Object>>;
-    fn __cdr_mut(&self) -> Option<RefMut<dyn Object>>;
+trait Atomic {
+    fn is_atom(&self) -> bool;
+    fn car(&self) -> Option<Ref<dyn Object>>;
+    fn cdr(&self) -> Option<Ref<dyn Object>>;
+    fn car_mut(&self) -> Option<RefMut<dyn Object>>;
+    fn cdr_mut(&self) -> Option<RefMut<dyn Object>>;
+}
+
+trait Object: Debug + Atomic {
+    fn type_id(&self) -> u64;
 }
 
 #[derive(Debug)]

@@ -1,11 +1,18 @@
-use std::{cell::{RefCell, Ref, RefMut}, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
-use machinate::Object;
+use machinate::Atomic;
 
 use crate::object::{Object, ObjPtr};
 
-#[derive(Debug, Object)]
+
+#[derive(Debug, Atomic)]
 pub struct MChar(char);
+
+impl Object for MChar {
+    fn type_id(&self) -> u64 {
+        4
+    }
+}
 
 impl MChar {
     pub fn new(ch: char) -> ObjPtr {
