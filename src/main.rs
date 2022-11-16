@@ -6,7 +6,7 @@ mod reader;
 mod object;
 
 fn main() -> io::Result<()> {
-    reader::token_rpl()?;
     test_obj();
+    reader::token_rpl()?;
     Ok(())
 }

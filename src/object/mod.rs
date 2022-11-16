@@ -32,16 +32,7 @@ impl ObjPtr {
     fn type_id(&self) -> MType {
         self.borrow().type_id()
     }
-    fn equals(&self, type_id: MType) -> bool {
+    fn t_equals(&self, type_id: MType) -> bool {
         self.type_id() == type_id
     }
 }
-
-/// Checks for type equivalence
-impl PartialEq for ObjPtr {
-    fn eq(&self, other: &Self) -> bool {
-        self.type_id() == other.type_id()
-    }
-}
-
-impl Eq for ObjPtr {}

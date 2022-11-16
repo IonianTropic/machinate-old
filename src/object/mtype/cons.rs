@@ -4,6 +4,17 @@ use crate::object::{Atomic, Object, ObjPtr};
 
 use super::MType;
 
+/* RECIPES FOR IO
+ *
+ * Cons cell with both ptrs pointing to the same data
+ * 
+ * let data = Nil::new().wrap();
+ * let singleton = Cons::new(data.clone(), data);
+ * 
+ * !! Optionally drop data to prevent dynamic dispatch creating more strong references
+ * 
+ * TODO: Cons cell with ptr(s) pointing to itself
+ */
 
 #[derive(Debug, Clone)]
 pub struct Cons {

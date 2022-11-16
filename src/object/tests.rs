@@ -1,10 +1,12 @@
-use crate::object::mtype::{symbol::Symbol, mint::MInt, cons::Cons, nil::Nil, mchar::MChar};
+use crate::object::{mtype::{cons::Cons, mchar::MChar}};
+
+use super::Atomic;
 
 // TODO: write full for object system
 pub fn test_obj() {
-    let minus = Symbol::new("-");
-    let minuend = MInt::new(21);
-    let subtrahend = MInt::new(7);
+    // let minus = Symbol::new("-");
+    // let minuend = MInt::new(21);
+    // let subtrahend = MInt::new(7);
 
     // let list = Cons::new(
     //     minus,
@@ -16,10 +18,19 @@ pub fn test_obj() {
     //         )
     //     )
     // );
-    let mut e = MChar::new('e');
-    let mut h = MChar::new('h');
-    h = e;
-    // let list_ref = list.borrow();
+    let mut _h = MChar::new('h');
+    let e = MChar::new('e');
+    _h = e;
+    let mut _l = MChar::new('l').wrap();
+    let o = MChar::new('o').wrap();
+    _l = o;
+    let singleton = Cons::new(_l.clone(), _l);
+    println!("o: {:?}\nalso o: {:?}", singleton.car().unwrap(), singleton.cdr().unwrap());
+    
+    // mcar = mwrap.clone();
+    // let raw = wrap.0.as_ptr();
+
+    // let list_ref = list.borrow()
     // println!(
     //     "First element: {:?}\nSecond element: {:?}\nThird element: {:?}",
     //     list_ref.car().unwrap(),
